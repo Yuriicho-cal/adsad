@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sentinel</title>
+<style>
+  :root {
+    --bg: #0f172a; --panel: #1e293b; --panel2: #273449; --text: #e2e8f0;
+    --muted: #94a3b8; --accent: #38bdf8; --danger: #f87171; --warn: #fbbf24; --ok: #4ade80;
+    --border: #334155;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .hidden { display: none !important; }
+  button { font: inherit; cursor: pointer; }
+  input, select, textarea { font: inherit; width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 14px 0 6px; }
+  .btn { background: var(--accent); color: #04263a; border: 0; padding: 10px 16px; border-radius: 8px; font-weight: 600; }
+  .btn:hover { filter: brightness(1.1); }
+  .btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .btn.danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 4px 10px; font-size: 13px; }
+
+  /* Login */
+  #login { display: grid; place-items: center; min-height: 100vh; padding: 20px; }
+  .login-card { width: 100%; max-width: 380px; background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 32px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-size: 26px; font-weight: 700; letter-spacing: .5px; }
+  .brand svg { width: 32px; height: 32px; }
+  .tagline { color: var(--muted); margin: 6px 0 10px; font-size: 14px; }
+  .pw-wrap { position: relative; }
+  .pw-wrap button { position: absolute; right: 6px; top: 6px; background: none; border: 0; color: var(--muted); padding: 6px 8px; }
+  .error { color: var(--danger); font-size: 14px; min-height: 20px; margin-top: 12px; }
+  .hint { margin-top: 18px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 14px; }
+
+  /* App */
+  header { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; background: var(--panel); border-bottom: 1px solid var(--border); }
+  header .who { display: flex; align-items: center; gap: 14px; color: var(--muted); font-size: 14px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; padding: 20px 24px 0; }
+  .stat { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .stat .n { font-size: 28px; font-weight: 700; }
+  .stat .l { color: var(--muted); font-size: 13px; }
+  .layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; padding: 20px 24px 40px; }
+  @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .student-list { list-style: none; margin: 12px 0 0; padding: 0; max-height: 55vh; overflow: auto; }
+  .student-list li { padding: 10px 12px; border-radius: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+  .student-list li:hover { background: var(--panel2); }
+  .student-list li.active { background: var(--panel2); outline: 1px solid var(--accent); }
+  .student-list small { color: var(--muted); display: block; }
+  .badge { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); }
+  .badge.minor { color: var(--ok); border-color: var(--ok); }
+  .badge.moderate { color: var(--warn); border-color: var(--warn); }
+  .badge.major { color: var(--danger); border-color: var(--danger); }
+  .count { background: var(--danger); color: #1b0505; font-weight: 700; border-radius: 999px; min-width: 24px; text-align: center; padding: 2px 8px; font-size: 12px; }
+  .count.zero { background: var(--ok); color: #052e12; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
+  .empty { color: var(--muted); padding: 24px 0; text-align: center; }
+  .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px) { .row { grid-template-columns: 1fr; } }
+  .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  h2, h3 { margin: 0; }
+  dialog { background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 14px; padding: 24px; width: min(420px, 92vw); }
+  dialog::backdrop { background: rgba(0,0,0,.6); }
+  .dlg-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<section id="login">
+  <form class="login-card" id="loginForm" autocomplete="off">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
+      Sentinel
+    </div>
+    <p class="tagline">Student violation records. Authorized staff only.</p>
+
+    <label for="username">Username</label>
+    <input id="username" type="text" required autofocus>
+
+    <label for="password">Password</label>
+    <div class="pw-wrap">
+      <input id="password" type="password" required>
+      <button type="button" id="togglePw">Show</button>
+    </div>
+
+    <div class="error" id="loginError" role="alert"></div>
+    <button class="btn" style="width:100%;margin-top:6px" type="submit">Log in</button>
+
+    <div class="hint">Demo accounts: <b>admin</b> / <b>admin123</b> &nbsp;·&nbsp; <b>teacher</b> / <b>teacher123</b></div>
+  </form>
+</section>
+
+<!-- ============ APP ============ -->
+<section id="app" class="hidden">
+  <header>
+    <div class="brand" style="font-size:20px">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
+      Sentinel
+    </div>
+    <div class="who">
+      <span id="whoami"></span>
+      <button class="btn ghost" id="logoutBtn">Log out</button>
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="n" id="statStudents">0</div><div class="l">Students</div></div>
+    <div class="stat"><div class="n" id="statViolations">0</div><div class="l">Total violations</div></div>
+    <div class="stat"><div class="n" id="statMonth">0</div><div class="l">This month</div></div>
+    <div class="stat"><div class="n" id="statMajor">0</div><div class="l">Major offenses</div></div>
+  </div>
+
+  <div class="layout">
+    <!-- Student list -->
+    <aside class="card">
+      <div class="toolbar">
+        <h3>Students</h3>
+        <button class="btn" id="addStudentBtn" style="padding:6px 12px">+ Add</button>
+      </div>
+      <input id="search" type="search" placeholder="Search name or ID…" style="margin-top:12px">
+      <ul class="student-list" id="studentList"></ul>
+    </aside>
+
+    <!-- Student detail -->
+    <main class="card" id="detail">
+      <div class="empty">Select a student to view their violations.</div>
+    </main>
+  </div>
+</section>
+
+<!-- Add student dialog -->
+<dialog id="studentDialog">
+  <form method="dialog" id="studentForm">
+    <h3>Add student</h3>
+    <label for="sName">Full name</label>
+    <input id="sName" required>
+    <label for="sId">Student ID</label>
+    <input id="sId" required>
+    <label for="sGrade">Grade / Section</label>
+    <input id="sGrade" placeholder="e.g. Grade 10 - A" required>
+    <div class="dlg-actions">
+      <button type="button" class="btn ghost" id="cancelStudent">Cancel</button>
+      <button type="submit" class="btn">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ---------- Config & storage ---------- */
+  const KEY_DATA = "sentinel_data_v1";
+  const KEY_SESSION = "sentinel_session_v1";
+  const VIOLATION_TYPES = [
+    "Tardiness", "Absence without excuse", "Uniform violation", "Disrespect",
+    "Cheating / Academic dishonesty", "Phone misuse", "Bullying", "Fighting",
+    "Vandalism", "Other"
+  ];
+
+  // DEMO ONLY: real apps must verify passwords on a server, never in browser code.
+  const USERS = [
+    { username: "admin",   password: "admin123",   name: "Administrator", role: "admin" },
+    { username: "teacher", password: "teacher123", name: "Teacher",       role: "teacher" }
+  ];
+
+  const today = () => new Date().toISOString().slice(0, 10);
+  const uid = () => Math.random().toString(36).slice(2, 10);
+
+  function seed() {
+    const d = new Date(), m = d.toISOString().slice(0, 8);
+    return {
+      students: [
+        { id: "2024-001", name: "Maria Santos", grade: "Grade 10 - A", violations: [
+          { vid: uid(), date: m + "03", type: "Tardiness", severity: "minor", description: "Late to first period.", reportedBy: "Teacher" },
+          { vid: uid(), date: m + "09", type: "Phone misuse", severity: "moderate", description: "Using phone during exam.", reportedBy: "Administrator" }
+        ]},
+        { id: "2024-002", name: "John Reyes", grade: "Grade 10 - A", violations: [
+          { vid: uid(), date: m + "05", type: "Fighting", severity: "major", description: "Physical altercation in hallway.", reportedBy: "Administrator" }
+        ]},
+        { id: "2024-003", name: "Ana Cruz", grade: "Grade 11 - B", violations: [] },
+        { id: "2024-004", name: "Carlo Mendoza", grade: "Grade 11 - B", violations: [
+          { vid: uid(), date: m + "01", type: "Uniform violation", severity: "minor", description: "Not wearing ID.", reportedBy: "Teacher" }
+        ]}
+      ]
+    };
+  }
+
+  function load() {
+    try { const raw = localStorage.getItem(KEY_DATA); if (raw) return JSON.parse(raw); } catch (e) {}
+    const s = seed(); save(s); return s;
+  }
+  function save(d) { try { localStorage.setItem(KEY_DATA, JSON.stringify(d)); } catch (e) {} }
+
+  let data = load();
+  let currentUser = null;
+  let selectedId = null;
+
+  /* ---------- Helpers ---------- */
+  const $ = (id) => document.getElementById(id);
+  function el(tag, props = {}, ...kids) {
+    const n = document.createElement(tag);
+    for (const [k, v] of Object.entries(props)) {
+      if (k === "class") n.className = v;
+      else if (k === "text") n.textContent = v;
+      else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+      else n.setAttribute(k, v);
+    }
+    kids.flat().forEach(c => n.append(c));
+    return n;
+  }
+
+  /* ---------- Login ---------- */
+  let attempts = 0, lockUntil = 0;
+
+  $("togglePw").addEventListener("click", () => {
+    const p = $("password");
+    const show = p.type === "password";
+    p.type = show ? "text" : "password";
+    $("togglePw").textContent = show ? "Hide" : "Show";
+  });
+
+  $("loginForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const err = $("loginError");
+    if (Date.now() < lockUntil) {
+      err.textContent = "Too many attempts. Try again in " + Math.ceil((lockUntil - Date.now()) / 1000) + "s.";
+      return;
+    }
+    const u = $("username").value.trim().toLowerCase();
+    const p = $("password").value;
+    const user = USERS.find(x => x.username === u && x.password === p);
+    if (!user) {
+      attempts++;
+      if (attempts >= 5) { lockUntil = Date.now() + 30000; attempts = 0; err.textContent = "Too many attempts. Locked for 30 seconds."; }
+      else err.textContent = "Invalid username or password.";
+      $("password").value = "";
+      return;
+    }
+    attempts = 0; err.textContent = "";
+    try { sessionStorage.setItem(KEY_SESSION, user.username); } catch (e) {}
+    enterApp(user);
+  });
+
+  $("logoutBtn").addEventListener("click", () => {
+    try { sessionStorage.removeItem(KEY_SESSION); } catch (e) {}
+    currentUser = null; selectedId = null;
+    $("app").classList.add("hidden");
+    $("login").classList.remove("hidden");
+    $("loginForm").reset();
+    $("username").focus();
+  });
+
+  function enterApp(user) {
+    currentUser = user;
+    $("login").classList.add("hidden");
+    $("app").classList.remove("hidden");
+    $("whoami").textContent = user.name + " (" + user.role + ")";
+    render();
+  }
+
+  /* ---------- Rendering ---------- */
+  function render() { renderStats(); renderList(); renderDetail(); }
+
+  function renderStats() {
+    const month = today().slice(0, 7);
+    const all = data.students.flatMap(s => s.violations);
+    $("statStudents").textContent = data.students.length;
+    $("statViolations").textContent = all.length;
+    $("statMonth").textContent = all.filter(v => v.date.startsWith(month)).length;
+    $("statMajor").textContent = all.filter(v => v.severity === "major").length;
+  }
+
+  function renderList() {
+    const q = $("search").value.trim().toLowerCase();
+    const ul = $("studentList");
+    ul.replaceChildren();
+    const list = data.students.filter(s => s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q));
+    if (!list.length) { ul.append(el("li", { class: "empty", text: "No students found." })); return; }
+    list.forEach(s => {
+      const n = s.violations.length;
+      ul.append(el("li", { class: s.id === selectedId ? "active" : "", onclick: () => { selectedId = s.id; render(); } },
+        el("div", {}, el("span", { text: s.name }), el("small", { text: s.id + " · " + s.grade })),
+        el("span", { class: "count" + (n ? "" : " zero"), text: String(n) })
+      ));
+    });
+  }
+
+  function renderDetail() {
+    const box = $("detail");
+    box.replaceChildren();
+    const s = data.students.find(x => x.id === selectedId);
+    if (!s) { box.append(el("div", { class: "empty", text: "Select a student to view their violations." })); return; }
+
+    box.append(el("div", { class: "toolbar" },
+      el("div", {}, el("h2", { text: s.name }), el("small", { style: "color:var(--muted)", text: s.id + " · " + s.grade })),
+      currentUser.role === "admin"
+        ? el("button", { class: "btn danger", text: "Remove student", onclick: () => removeStudent(s.id) })
+        : ""
+    ));
+
+    // Violations table
+    box.append(el("h3", { style: "margin-top:20px", text: "Violations (" + s.violations.length + ")" }));
+    if (!s.violations.length) {
+      box.append(el("div", { class: "empty", text: "No violations on record." }));
+    } else {
+      const head = el("tr", {}, ...["Date", "Type", "Severity", "Details", "Reported by", ""].map(h => el("th", { text: h })));
+      const body = el("tbody");
+      [...s.violations].sort((a, b) => b.date.localeCompare(a.date)).forEach(v => {
+        body.append(el("tr", {},
+          el("td", { text: v.date }),
+          el("td", { text: v.type }),
+          el("td", {}, el("span", { class: "badge " + v.severity, text: v.severity })),
+          el("td", { text: v.description || "—" }),
+          el("td", { text: v.reportedBy }),
+          el("td", {}, currentUser.role === "admin"
+            ? el("button", { class: "btn danger", text: "Delete", onclick: () => deleteViolation(s.id, v.vid) })
+            : "")
+        ));
+      });
+      box.append(el("table", {}, el("thead", {}, head), body));
+    }
+
+    // Add violation form
+    const f = el("form", { style: "margin-top:24px;border-top:1px solid var(--border);padding-top:8px" });
+    const typeSel = el("select", { id: "vType" }, ...VIOLATION_TYPES.map(t => el("option", { value: t, text: t })));
+    const sevSel = el("select", { id: "vSev" },
+      el("option", { value: "minor", text: "Minor" }),
+      el("option", { value: "moderate", text: "Moderate" }),
+      el("option", { value: "major", text: "Major" }));
+    const dateIn = el("input", { id: "vDate", type: "date", value: today(), required: "" });
+    const desc = el("textarea", { id: "vDesc", rows: "2", placeholder: "What happened?" });
+    f.append(
+      el("h3", { style: "margin-top:12px", text: "Record a violation" }),
+      el("div", { class: "row" },
+        el("div", {}, el("label", { for: "vType", text: "Type" }), typeSel),
+        el("div", {}, el("label", { for: "vSev", text: "Severity" }), sevSel),
+        el("div", {}, el("label", { for: "vDate", text: "Date" }), dateIn)),
+      el("label", { for: "vDesc", text: "Description" }), desc,
+      el("button", { class: "btn", style: "margin-top:14px", type: "submit", text: "Add violation" })
+    );
+    f.addEventListener("submit", (e) => {
+      e.preventDefault();
+      s.violations.push({
+        vid: uid(), date: dateIn.value, type: typeSel.value, severity: sevSel.value,
+        description: desc.value.trim(), reportedBy: currentUser.name
+      });
+      save(data); render();
+    });
+    box.append(f);
+  }
+
+  function deleteViolation(studentId, vid) {
+    if (!confirm("Delete this violation record?")) return;
+    const s = data.students.find(x => x.id === studentId);
+    s.violations = s.violations.filter(v => v.vid !== vid);
+    save(data); render();
+  }
+
+  function removeStudent(id) {
+    if (!confirm("Remove this student and all their violations?")) return;
+    data.students = data.students.filter(s => s.id !== id);
+    selectedId = null; save(data); render();
+  }
+
+  /* ---------- Add student ---------- */
+  const dlg = $("studentDialog");
+  $("addStudentBtn").addEventListener("click", () => { $("studentForm").reset(); dlg.showModal(); });
+  $("cancelStudent").addEventListener("click", () => dlg.close());
+  $("studentForm").addEventListener("submit", () => {
+    const id = $("sId").value.trim();
+    if (data.students.some(s => s.id === id)) { alert("A student with that ID already exists."); return; }
+    data.students.push({ id, name: $("sName").value.trim(), grade: $("sGrade").value.trim(), violations: [] });
+    selectedId = id; save(data); render();
+  });
+
+  $("search").addEventListener("input", renderList);
+
+  /* ---------- Restore session ---------- */
+  try {
+    const saved = sessionStorage.getItem(KEY_SESSION);
+    const user = USERS.find(u => u.username === saved);
+    if (user) enterApp(user);
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>
